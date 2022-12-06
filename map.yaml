@@ -1,0 +1,141 @@
+%YAML 1.2
+---
+map:
+  context : fabric
+  name: TOTO
+  bgcolor: ''
+  fontsize: 10
+  width: 1600
+  height: 1200
+zabbix:
+  url: http://127.0.0.1:8080
+  login: Admin
+  password: zabbix
+devices:
+  # -----------------------------
+  # |      BACKBONE-DEVICES     |
+  # -----------------------------
+  - name : BTR01-TST
+    links :
+      - BLF0101-TST
+  - name : BTR02-TST
+    links :
+      - BLF0102-TST
+  - name : MBR01-TST
+    links :
+      - BLF0101-TST
+  - name : MBR02-TST
+    links :
+      - BLF0102-TST
+  - name : OER01-TST
+    links :
+      - BLF0101-TST
+  - name : OER02-TST
+    links :
+      - BLF0102-TST
+  # -----------------------------
+  # |      BORDER-LEAF          |
+  # -----------------------------
+  - name : BLF0101-TST
+    links:
+      - BTR01-TST
+      - MBR01-TST
+      - OER01-TST
+      - F2TSTLB02-1
+      - BLF0102-TST
+      - SPN0101-TST
+      - SPN0102-TST
+      - SPN0103-TST
+
+  - name : BLF0102-TST
+    links:
+      - BTR02-TST
+      - MBR02-TST
+      - OER02-TST
+      - F2TSTLB02-2
+      - BLF0101-TST
+      - SPN0101-TST
+      - SPN0102-TST
+      - SPN0103-TST
+  # -----------------------------
+  # |        FIREWALL            |
+  # -----------------------------
+  - name : F2TSTLB02-1
+    links:
+      - BLF0101-TST
+
+  - name : F2TSTLB02-2
+    links:
+      - BLF0102-TST
+  # -----------------------------
+  # |         SPINE             |
+  # -----------------------------
+  - name : SPN0101-TST
+    role : main
+    links:
+      - BLF0101-TST
+      - BLF0102-TST
+      - SPN0203-TST
+      - SPN0204-TST
+      - TOR0101-TST
+      - TOR0102-TST
+  - name : SPN0102-TST
+    role : main
+    links:
+      - BLF0101-TST
+      - BLF0102-TST
+      - SPN0203-TST
+      - SPN0204-TST
+      - TOR0101-TST
+      - TOR0102-TST
+  - name : SPN0103-TST
+    role : main
+    links:
+      - BLF0101-TST
+      - BLF0102-TST
+      - SPN0203-TST
+      - SPN0204-TST
+      - TOR0101-TST
+      - TOR0102-TST
+  - name : SPN0203-TST
+    role : satellite
+    links:
+      - SPN0101-TST
+      - SPN0102-TST
+      - SPN0103-TST
+      - TOR0103-TST
+      - TOR0104-TST
+  - name : SPN0204-TST
+    role : satellite
+    links:
+      - SPN0101-TST
+      - SPN0102-TST
+      - SPN0103-TST
+      - TOR0103-TST
+      - TOR0104-TST
+  # -----------------------------
+  # |          LEAF             |
+  # -----------------------------
+  - name : TOR0101-TST
+    role : main
+    links:
+      - SPN0101-TST
+      - SPN0102-TST
+      - SPN0103-TST
+  - name : TOR0102-TST
+    role : main
+    links:
+      - SPN0101-TST
+      - SPN0102-TST
+      - SPN0103-TST
+  - name : TOR0103-TST
+    role : satellite
+    links:
+      - SPN0203-TST
+      - SPN0204-TST
+  - name : TOR0104-TST
+    role : satellite
+    links:
+      - SPN0203-TST
+      - SPN0204-TST
+...
