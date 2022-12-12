@@ -1,141 +1,286 @@
-%YAML 1.2
 ---
-map:
-  context : fabric
-  name: TOTO
-  bgcolor: ''
-  fontsize: 10
-  width: 1600
-  height: 1200
-zabbix:
-  url: http://127.0.0.1:8080
-  login: Admin
-  password: zabbix
+name: POP_FabricV2_LYO
+context: fabric
 devices:
-  # -----------------------------
-  # |      BACKBONE-DEVICES     |
-  # -----------------------------
-  - name : BTR01-TST
-    links :
-      - BLF0101-TST
-  - name : BTR02-TST
-    links :
-      - BLF0102-TST
-  - name : MBR01-TST
-    links :
-      - BLF0101-TST
-  - name : MBR02-TST
-    links :
-      - BLF0102-TST
-  - name : OER01-TST
-    links :
-      - BLF0101-TST
-  - name : OER02-TST
-    links :
-      - BLF0102-TST
-  # -----------------------------
-  # |      BORDER-LEAF          |
-  # -----------------------------
-  - name : BLF0101-TST
+  BLF0203-LYO:
+    role: main
     links:
-      - BTR01-TST
-      - MBR01-TST
-      - OER01-TST
-      - F2TSTLB02-1
-      - BLF0102-TST
-      - SPN0101-TST
-      - SPN0102-TST
-      - SPN0103-TST
-
-  - name : BLF0102-TST
+    - interface: Port-channel17
+      peer_role: main
+      peer_name: OER02-LYO
+    - interface: Port-channel54
+      peer_role: main
+      peer_name: F2LYOLB02-1
+    - interface: Port-channel141
+      peer_role: main
+      peer_name: BTR02-LYO
+    - interface: Port-channel200
+      peer_role: main
+      peer_name: BLF0204-LYO
+    - interface: Port-channel220
+      peer_role: main
+      peer_name: MBR02-LYO
+    - interface: Port-channel1100
+      peer_role: main
+      peer_name: SPN0201-LYO
+    - interface: Port-channel1200
+      peer_role: main
+      peer_name: SPN0202-LYO
+    - interface: Port-channel1300
+      peer_role: main
+      peer_name: SPN0203-LYO
+    - interface: Port-channel1400
+      peer_role: main
+      peer_name: SPN0204-LYO
+  SPN0203-LYO:
+    role: main
     links:
-      - BTR02-TST
-      - MBR02-TST
-      - OER02-TST
-      - F2TSTLB02-2
-      - BLF0101-TST
-      - SPN0101-TST
-      - SPN0102-TST
-      - SPN0103-TST
-  # -----------------------------
-  # |        FIREWALL            |
-  # -----------------------------
-  - name : F2TSTLB02-1
+    - interface: Port-channel1300
+      peer_role: main
+      peer_name: BLF0203-LYO
+    - interface: Port-channel1301
+      peer_role: main
+      peer_name: BLF0204-LYO
+    - interface: Port-channel1304
+      peer_role: main
+      peer_name: TOR0207-LYO
+    - interface: Port-channel1305
+      peer_role: main
+      peer_name: TOR0208-LYO
+    - interface: Port-channel1306
+      peer_role: main
+      peer_name: TOR0209-LYO
+    - interface: Port-channel1307
+      peer_role: main
+      peer_name: TOR0210-LYO
+    - interface: Port-channel1308
+      peer_role: main
+      peer_name: TOR0263-LYO
+    - interface: Port-channel1309
+      peer_role: main
+      peer_name: TOR0264-LYO
+    - interface: Port-channel1314
+      peer_role: main
+      peer_name: TOR0213-LYO
+    - interface: Port-channel1315
+      peer_role: main
+      peer_name: TOR0214-LYO
+    - interface: Port-channel1502
+      peer_role: satellite
+      peer_name: SPN0205-LYO
+    - interface: Port-channel1602
+      peer_role: satellite
+      peer_name: SPN0206-LYO
+  SPN0201-LYO:
+    role: main
     links:
-      - BLF0101-TST
-
-  - name : F2TSTLB02-2
+    - interface: Port-channel1100
+      peer_role: main
+      peer_name: BLF0203-LYO
+    - interface: Port-channel1101
+      peer_role: main
+      peer_name: BLF0204-LYO
+    - interface: Port-channel1104
+      peer_role: main
+      peer_name: TOR0207-LYO
+    - interface: Port-channel1105
+      peer_role: main
+      peer_name: TOR0208-LYO
+    - interface: Port-channel1106
+      peer_role: main
+      peer_name: TOR0209-LYO
+    - interface: Port-channel1107
+      peer_role: main
+      peer_name: TOR0210-LYO
+    - interface: Port-channel1108
+      peer_role: main
+      peer_name: TOR0263-LYO
+    - interface: Port-channel1109
+      peer_role: main
+      peer_name: TOR0264-LYO
+    - interface: Port-channel1114
+      peer_role: main
+      peer_name: TOR0213-LYO
+    - interface: Port-channel1115
+      peer_role: main
+      peer_name: TOR0214-LYO
+    - interface: Port-channel1500
+      peer_role: satellite
+      peer_name: SPN0205-LYO
+    - interface: Port-channel1600
+      peer_role: satellite
+      peer_name: SPN0206-LYO
+  BLF0204-LYO:
+    role: main
     links:
-      - BLF0102-TST
-  # -----------------------------
-  # |         SPINE             |
-  # -----------------------------
-  - name : SPN0101-TST
-    role : main
+    - interface: Port-channel17
+      peer_role: main
+      peer_name: OER01-LYO
+    - interface: Port-channel54
+      peer_role: main
+      peer_name: F2LYOLB02-2
+    - interface: Port-channel141
+      peer_role: main
+      peer_name: BTR01-LYO
+    - interface: Port-channel200
+      peer_role: main
+      peer_name: BLF0203-LYO
+    - interface: Port-channel220
+      peer_role: main
+      peer_name: MBR01-LYO
+    - interface: Port-channel1101
+      peer_role: main
+      peer_name: SPN0201-LYO
+    - interface: Port-channel1201
+      peer_role: main
+      peer_name: SPN0202-LYO
+    - interface: Port-channel1301
+      peer_role: main
+      peer_name: SPN0203-LYO
+    - interface: Port-channel1401
+      peer_role: main
+      peer_name: SPN0204-LYO
+  SPN0202-LYO:
+    role: main
     links:
-      - BLF0101-TST
-      - BLF0102-TST
-      - SPN0203-TST
-      - SPN0204-TST
-      - TOR0101-TST
-      - TOR0102-TST
-  - name : SPN0102-TST
-    role : main
+    - interface: Port-channel1200
+      peer_role: main
+      peer_name: BLF0203-LYO
+    - interface: Port-channel1201
+      peer_role: main
+      peer_name: BLF0204-LYO
+    - interface: Port-channel1204
+      peer_role: main
+      peer_name: TOR0207-LYO
+    - interface: Port-channel1205
+      peer_role: main
+      peer_name: TOR0208-LYO
+    - interface: Port-channel1206
+      peer_role: main
+      peer_name: TOR0209-LYO
+    - interface: Port-channel1207
+      peer_role: main
+      peer_name: TOR0210-LYO
+    - interface: Port-channel1208
+      peer_role: main
+      peer_name: TOR0263-LYO
+    - interface: Port-channel1209
+      peer_role: main
+      peer_name: TOR0264-LYO
+    - interface: Port-channel1214
+      peer_role: main
+      peer_name: TOR0213-LYO
+    - interface: Port-channel1215
+      peer_role: main
+      peer_name: TOR0214-LYO
+    - interface: Port-channel1501
+      peer_role: satellite
+      peer_name: SPN0205-LYO
+    - interface: Port-channel1601
+      peer_role: satellite
+      peer_name: SPN0206-LYO
+  SPN0204-LYO:
+    role: main
     links:
-      - BLF0101-TST
-      - BLF0102-TST
-      - SPN0203-TST
-      - SPN0204-TST
-      - TOR0101-TST
-      - TOR0102-TST
-  - name : SPN0103-TST
-    role : main
+    - interface: Port-channel1400
+      peer_role: main
+      peer_name: BLF0203-LYO
+    - interface: Port-channel1401
+      peer_role: main
+      peer_name: BLF0204-LYO
+    - interface: Port-channel1404
+      peer_role: main
+      peer_name: TOR0207-LYO
+    - interface: Port-channel1405
+      peer_role: main
+      peer_name: TOR0208-LYO
+    - interface: Port-channel1406
+      peer_role: main
+      peer_name: TOR0209-LYO
+    - interface: Port-channel1407
+      peer_role: main
+      peer_name: TOR0210-LYO
+    - interface: Port-channel1408
+      peer_role: main
+      peer_name: TOR0263-LYO
+    - interface: Port-channel1409
+      peer_role: main
+      peer_name: TOR0264-LYO
+    - interface: Port-channel1414
+      peer_role: main
+      peer_name: TOR0213-LYO
+    - interface: Port-channel1415
+      peer_role: main
+      peer_name: TOR0214-LYO
+    - interface: Port-channel1503
+      peer_role: satellite
+      peer_name: SPN0205-LYO
+    - interface: Port-channel1603
+      peer_role: satellite
+      peer_name: SPN0206-LYO
+  SPN0205-LYO:
+    role: satellite
     links:
-      - BLF0101-TST
-      - BLF0102-TST
-      - SPN0203-TST
-      - SPN0204-TST
-      - TOR0101-TST
-      - TOR0102-TST
-  - name : SPN0203-TST
-    role : satellite
+    - interface: Port-channel1500
+      peer_role: main
+      peer_name: SPN0201-LYO
+    - interface: Port-channel1501
+      peer_role: main
+      peer_name: SPN0202-LYO
+    - interface: Port-channel1502
+      peer_role: main
+      peer_name: SPN0203-LYO
+    - interface: Port-channel1503
+      peer_role: main
+      peer_name: SPN0204-LYO
+    - interface: Port-channel1504
+      peer_role: satellite
+      peer_name: TOR0203-LYO
+    - interface: Port-channel1505
+      peer_role: satellite
+      peer_name: TOR0204-LYO
+    - interface: Port-channel1506
+      peer_role: satellite
+      peer_name: TOR0205-LYO
+    - interface: Port-channel1507
+      peer_role: satellite
+      peer_name: TOR0206-LYO
+    - interface: Port-channel1508
+      peer_role: satellite
+      peer_name: TOR0201-LYO
+    - interface: Port-channel1509
+      peer_role: satellite
+      peer_name: TOR0202-LYO
+  SPN0206-LYO:
+    role: satellite
     links:
-      - SPN0101-TST
-      - SPN0102-TST
-      - SPN0103-TST
-      - TOR0103-TST
-      - TOR0104-TST
-  - name : SPN0204-TST
-    role : satellite
-    links:
-      - SPN0101-TST
-      - SPN0102-TST
-      - SPN0103-TST
-      - TOR0103-TST
-      - TOR0104-TST
-  # -----------------------------
-  # |          LEAF             |
-  # -----------------------------
-  - name : TOR0101-TST
-    role : main
-    links:
-      - SPN0101-TST
-      - SPN0102-TST
-      - SPN0103-TST
-  - name : TOR0102-TST
-    role : main
-    links:
-      - SPN0101-TST
-      - SPN0102-TST
-      - SPN0103-TST
-  - name : TOR0103-TST
-    role : satellite
-    links:
-      - SPN0203-TST
-      - SPN0204-TST
-  - name : TOR0104-TST
-    role : satellite
-    links:
-      - SPN0203-TST
-      - SPN0204-TST
-...
+    - interface: Port-channel1600
+      peer_role: main
+      peer_name: SPN0201-LYO
+    - interface: Port-channel1601
+      peer_role: main
+      peer_name: SPN0202-LYO
+    - interface: Port-channel1602
+      peer_role: main
+      peer_name: SPN0203-LYO
+    - interface: Port-channel1603
+      peer_role: main
+      peer_name: SPN0204-LYO
+    - interface: Port-channel1604
+      peer_role: satellite
+      peer_name: TOR0203-LYO
+    - interface: Port-channel1605
+      peer_role: satellite
+      peer_name: TOR0204-LYO
+    - interface: Port-channel1606
+      peer_role: satellite
+      peer_name: TOR0205-LYO
+    - interface: Port-channel1607
+      peer_role: satellite
+      peer_name: TOR0206-LYO
+    - interface: Port-channel1608
+      peer_role: satellite
+      peer_name: TOR0201-LYO
+    - interface: Port-channel1609
+      peer_role: satellite
+      peer_name: TOR0202-LYO
