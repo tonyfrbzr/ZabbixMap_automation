@@ -1,6 +1,6 @@
+import pyzabbix
 import re
 import yaml
-import pyzabbix
 
 def check_device_type(name) -> str:
     switcher = {
@@ -67,19 +67,19 @@ class Device:
 
             self.check_role()
 
-            # for key in response["result"][0]:
-            #    setattr(self, key, response["result"][0].get(key))
-
             self.get_image_id()
             # self.get_cpu_graph_id()
             print(f"Device '{host}' retrieved with hostId {self.hostid}")
         else:
             print(f"Device '{host}' not found")
 
-    def add_link(self, peer_device: str = "", link: dict = {}) -> None:
-        if not self.links.get(peer_device):
-            self.links[peer_device] = link
+    def add_link(self, link: dict = {}) -> None:
+        if not self.links.get(link.get("peer_name")):
+            self.links[link.get("peer_name")] = {"interface" : link.get("interface")}
+#            self.links[peer_device] = link
 
+    def set_selementid(self, selementid):
+        self.selementid = selementid
     def check_role(self):
         if hasattr(self, "y"):
             if self.type == "spine" and int(self.y) > int("600"):
@@ -89,7 +89,6 @@ class Device:
 
     def set_role(self, role: str = "main") -> None:
         self.role = role
-        print("done")
 
     def get_image_id(self) -> None:
         if self.type in ["leaf", "spine", "border-leaf"]:
@@ -149,6 +148,9 @@ class zabbixMap:
         self.name = name
         self.img_width = 128
         self.devices = {}
+
+        self.selementsid_devices_mapping = {}
+
         if not connector:
             self.connector = zabbixConnector(server, user, password)
         else:
@@ -195,8 +197,9 @@ class zabbixMap:
     def analyze_map(self) -> None:
         if self.retrieved_map:
             print("Retrieving data from map")
+            self.width = self.retrieved_map.get("width")
+            self.height = self.retrieved_map.get("height")
             if self.retrieved_map.get("selements"):
-                self.selementsid_devices_mapping = {}
                 for selement in self.retrieved_map.get("selements"):
                     # retrieve devicename by hostid
                     payload = {
@@ -214,183 +217,204 @@ class zabbixMap:
                             self.add_device(devicename)
 
                     devicetype = check_device_type(devicename)
-                    self.devices[devicetype][devicename].set_selementid(selement.get("selementid"))
-                    self.devices[devicetype][devicename].set_x_y(selement.get("x"), selement.get("y"))
-                    self.devices[devicetype][devicename].check_role()
+                    self.devices[devicename].set_selementid(selement.get("selementid"))
+                    self.devices[devicename].set_x_y(selement.get("x"), selement.get("y"))
+                    self.devices[devicename].check_role()
 
-            if self.retrieved_map.get("links"):
-                for link in self.retrieved_map.get("links"):
-                    source_device = self.selementsid_devices_mapping.get(link.get("selementid1"))
-                    dest_device = self.selementsid_devices_mapping.get(link.get("selementid2"))
-                    for group in self.devices:
-                        for device in self.devices[group]:
-                            if device == source_device:
-                                self.devices[group][device].add_link(dest_device, link)
-                            if device == dest_device:
-                                self.devices[group][device].add_link(source_device, link)
+            #if self.retrieved_map.get("links"):
+            #    for link in self.retrieved_map.get("links"):
+            #        source_device = self.selementsid_devices_mapping.get(link.get("selementid1"))
+            #        dest_device = self.selementsid_devices_mapping.get(link.get("selementid2"))
+            #        for group in self.devices:
+            #            for device in self.devices[group]:
+            #                if device == source_device:
+            #                #    self.devices[group][device].add_link(link)
+            #                if device == dest_device:
+                            #    self.devices[group][device].add_link(link)
         else:
             print("No map to analyze")
 
     def analyse_yaml(self, file: str = "") -> None:
+        # Open YAML file
         with open(file, 'r') as yaml_file:
             yaml_content = yaml.safe_load(yaml_file)
-        self.context = yaml_content["map"].get("context")
+        self.context = yaml_content.get("context")
+        # for each devices in devices list in YAML
         if yaml_content.get("devices"):
-            for device in yaml_content["devices"]:
-                self.add_device(device.get("name"))
-                device_type = check_device_type(device.get("name"))
-                if device.get("role"):
-                    self.devices[device_type][device.get("name")].set_role(device.get("role"))
+            if not self.selementsid_devices_mapping:
+                self.selementid = 0
+            else:
+                self.selementid = int(max(self.selementsid_devices_mapping.keys()))
 
-                if device.get("links"):
-                    for link in device["links"]:
-                        self.devices[device_type][device.get("name")].add_link(link)
+            # For each device in YAML devices lists
+            for devicename, attribute in yaml_content["devices"].items():
+                # Add device to map object
+                self.add_device(devicename)
+                #device_type = check_device_type(devicename)
+
+                #set device role
+                if attribute.get("role"):
+                    self.devices[devicename].set_role(attribute.get("role"))
+
+                # For each link in devices
+                for link in attribute["links"]:
+                    # if peer device is not in the map object, add it with his role
+                    self.add_device(link.get("peer_name"))
+                    self.devices[link.get("peer_name")].set_role(link.get("peer_role"))
+                    # Add link to device
+                    self.devices[devicename].add_link(link)
+
 
     def check_device_in_devices_list(self, devicename: str = "", devices: dict = {}) -> bool:
-        for group in devices:
-            if devicename in devices[group]:
-                return True
-        return False
+        if devicename in devices:
+            return True
+        else:
+            return False
 
     def add_device(self, devicename: str = "") -> None:
+        # If device type dictionnary doesn't exist, create it
         devicetype = check_device_type(devicename)
-        if not self.devices.get(devicetype):
-            self.devices[devicetype] = {}
 
-        if not self.devices[devicetype].get(devicename):
-            self.devices[devicetype][devicename] = Device(devicename, self.connector)
-            self.devices[devicetype][devicename].set_type(devicetype)
-            print(f"Device {self.devices[devicetype][devicename].get_host()} added")
+        #if not self.devices.get(devicetype):
+        #    self.devices[devicetype] = {}
+        #
+        if not self.devices.get(devicename):
+            try:
+                self.devices[devicename] = Device(devicename, self.connector)
+                self.devices[devicename].set_type(devicetype)
+
+                if not devicename in self.selementsid_devices_mapping.values():
+                    self.selementid += 1
+                    self.devices[devicename].set_selementid(self.selementid)
+                    self.selementsid_devices_mapping[self.selementid] = devicename
+
+                print(f"Device '{self.devices[devicename].get_host()}' added")
+            except AttributeError:
+                print(f"Device '{devicename}' not found, so it was not added")
 
     def generate_links(self) -> None:
         self.links = []
+        inverted_selementsid_devices_mapping = dict(zip(self.selementsid_devices_mapping.values(), self.selementsid_devices_mapping.keys()))
         # Generate links for fabric context
         if self.context == "fabric":
-            backbone_devices = {}
-
-            # add all backbone device into the same dict
-            for group in self.devices:
-                if group in ["ORION", "BBNG", "SIRIUS", "ARCTURUS"]:
-                    for device_name, device_obj in self.devices.get(group).items():
-                        backbone_devices[device_name] = device_obj
-
-            # build link from all backbone device (Should be BLF device)
-            for device_name, device_obj in backbone_devices.items():
-                if device_obj.links:
-                    for peer, peer_attribute in device_obj.links.items():
-                        if check_device_type(peer) in ["border-leaf"]:
+            # Build links only from border leaf and spine
+            # starting from BLF
+            blf_devices = []
+            for device, device_obj in self.devices.items():
+                if device_obj.type == "border-leaf":
+                    blf_devices.append(inverted_selementsid_devices_mapping.get(device))
+                    for peer_device, interface in device_obj.links.items():
+                        link = {
+                            "label_host" : device,
+                            "source_element_id" : inverted_selementsid_devices_mapping.get(device),
+                            "dest_element_id" : inverted_selementsid_devices_mapping.get(peer_device),
+                            "port": interface.get("interface")
+                        }
+                        self.links.append(link)
+                if device_obj.type == "spine":
+                    for peer_device, interface in device_obj.links.items():
+                        if self.devices[peer_device].type == "leaf" or self.devices[peer_device].role == "satellite":
                             link = {
-                                "source_elementid": peer_attribute.get("selementid1"),
-                                "dest_elementid": peer_attribute.get("selementid2"),
-                                "label_host": peer
+                                "label_host" : device,
+                                "source_element_id" : inverted_selementsid_devices_mapping.get(device),
+                                "dest_element_id" : inverted_selementsid_devices_mapping.get(peer_device),
+                                "port": interface.get("interface")
                             }
                             self.links.append(link)
 
-            # build link from all Border_leaf device (Should be FW or Spine device )
-            for borderleaf_device_name, borderleaf_device_attribute in self.devices.get("border-leaf").items():
-                if borderleaf_device_attribute.links:
-                    for peer, peer_attribute in borderleaf_device_attribute.links.items():
-                        if check_device_type(peer) in ["spine", "firewall", "border-leaf"]:
-                            link = {
-                                "source_elementid": peer_attribute.get("selementid1"),
-                                "dest_elementid": peer_attribute.get("selementid2"),
-                                "label_host": peer
-                            }
-                            self.links.append(link)
-
-            # build link from all spine device (Should be leaf or spine device )
-            for spine_device_name, spine_device_attribute in self.devices.get("spine").items():
-                if spine_device_attribute.links:
-                    for peer, peer_attribute in spine_device_attribute.links.items():
-                        if check_device_type(peer) in ["spine", "leaf"]:
-                            link = {
-                                "source_elementid": peer_attribute.get("selementid1"),
-                                "dest_elementid": peer_attribute.get("selementid2"),
-                                "label_host": peer
-                            }
-                            self.links.append(link)
+            #cleaning duplicate links
+            for link in self.links:
+                if link["source_element_id"] == blf_devices[0] and link["dest_element_id"] == blf_devices[1]:
+                    self.links.remove(link)
+            print("end")
 
     def generate_map_json(self) -> None:
         self.payload = {"selements": [], "links": []}
         if self.retrieved_map:
             self.payload["sysmapid"] = self.retrieved_map.get("sysmapid")
-            if self.devices:
-                for group_name, group_attribute in self.devices.items():
-                    for device_name, device_obj in group_attribute.items():
-                        self.payload["selements"].append({
-                            "selementid": device_obj.selementid,
-                            "x": device_obj.x,
-                            "y": device_obj.y,
-                            "elements": [
-                                {"hostid": device_obj.hostid}
-                            ],
-                            "label": "{HOSTNAME} ({HOST.IP})\nCPU: {{HOST.HOST}:CPU.last(0)}",
-                            "elementtype": 0,
-                            "iconid_off": device_obj.image_id
-                        })
+        else:
+            self.payload["name"] = self.name
+            self.payload["height"] = self.height
+            self.payload["width"] = self.width
 
-        if self.links:
+        if hasattr(self, "devices"):
+            for device_name, device_obj in self.devices.items():
+                self.payload["selements"].append({
+                    "selementid": device_obj.selementid,
+                    "x": device_obj.x,
+                    "y": device_obj.y,
+                    "elements": [
+                        {"hostid": device_obj.hostid}],
+                    "label": "{HOSTNAME} ({HOST.IP})\nCPU: {{HOST.HOST}:CPU.last(0)}",
+                    "elementtype": 0,
+                    "iconid_off": device_obj.image_id
+                    })
+
+        if hasattr(self, "links"):
             for link in self.links:
                 self.payload["links"].append({
-                    "label": "In:{" + link.get(
-                        "label_host") + ":ifHCInOctets[port-channel100].last()}\nOut:{" + link.get(
-                        "label_host") + ":ifHCOutOctets[port-channel100].last()}\n[MAX-BW: {" + link.get(
+                    "label": "In:{" + link.get("label_host") + ":ifHCInOctets[" + link.get('port')+"].last()}\nOut:{" + link.get("label_host") + ":ifHCOutOctets[" + link.get('port') +"].last()}\n[MAX-BW: {" + link.get(
                         "label_host") + ":ifHighSpeed[369098851].last()}]",
                     "color": "00CC00",
-                    "selementid1": link.get("source_elementid"),
-                    "selementid2": link.get("dest_elementid")
+                    "selementid1": link.get("source_element_id"),
+                    "selementid2": link.get("dest_element_id")
                 })
 
     def update_map(self) -> None:
-        response = self.connector.request("map.update", self.payload)
+        if self.retrieved_map:
+            response = self.connector.request("map.update", self.payload)
+        else:
+            response = self.connector.request("map.create", self.payload)
+
         if response.get("result"):
-            print(f"Map {self.name} updated")
+                print(f"Map {self.name} updated")
 
     def position_devices(self) -> None:
         # sort devices that will be in the same level in the dame dict
         mapping = {}
         if self.context == "fabric":
             # order device into layer dependending on there function
-            for group in self.devices:
-                if group in ["ORION", "BBNG", "SIRIUS", "ARCTURUS"]:
+            for device, device_obj in self.devices.items():
+                if device_obj.type in ["ORION", "BBNG", "SIRIUS", "ARCTURUS"]:
                     if not mapping.get("l1"):
                         mapping["l1"] = {}
-                    for devicename, device_obj in self.devices.get(group).items():
-                        mapping["l1"][devicename] = device_obj
-                if group in ["border-leaf"]:
+                    mapping["l1"][device] = device_obj
+
+                if device_obj.type in ["border-leaf"]:
                     if not mapping.get("l2"):
                         mapping["l2"] = {}
-                    for devicename, device_obj in self.devices.get(group).items():
+                        mapping_l2_unsorted = []
+                    mapping_l2_unsorted.append((device, device_obj))
                         # retrieve firewall
-                        for peer in device_obj.links:
-                            if check_device_type(peer) == "firewall" and not mapping.get("l2"):
-                                mapping["l2"][peer] = self.devices["firewall"][peer]
-                                mapping["l2"][devicename] = device_obj
-                            elif check_device_type(peer) == "firewall" and mapping.get("l2"):
-                                mapping["l2"][devicename] = device_obj
-                                mapping["l2"][peer] = self.devices["firewall"][peer]
+                    for peer in device_obj.links:
+                        if check_device_type(peer) == "firewall":
+                            mapping_l2_unsorted.append((peer, self.devices[peer]))
 
-                if group in ["spine", "leaf"]:
-                    for devicename, device_obj in self.devices.get(group).items():
-                        if group == "spine" and device_obj.role == "main":
-                            if not mapping.get("l3"):
-                                mapping["l3"] = {}
-                            mapping["l3"][devicename] = device_obj
-                        elif (group == "spine" and device_obj.role == "satellite") or (
-                                group == "leaf" and device_obj.role == "main"):
-                            if not mapping.get("l4"):
-                                mapping["l4"] = {}
-                            mapping["l4"][devicename] = device_obj
-                        elif group == "leaf" and device_obj.role == "satellite":
-                            if not mapping.get("l5"):
-                                mapping["l5"] = {}
-                            mapping["l5"][devicename] = device_obj
+                    mapping_l2_unsorted[0], mapping_l2_unsorted[1] = mapping_l2_unsorted[1], mapping_l2_unsorted[0]
+
+                    for devicename, device_obj in mapping_l2_unsorted:
+                        mapping["l2"][devicename] = device_obj
+
+                if device_obj.type in ["spine", "leaf"]:
+                    if device_obj.type == "spine" and device_obj.role == "main":
+                        if not mapping.get("l3"):
+                            mapping["l3"] = {}
+                        mapping["l3"][device] = device_obj
+                    elif (device_obj.type == "spine" and device_obj.role == "satellite") or (
+                            device_obj.type == "leaf" and device_obj.role == "main"):
+                        if not mapping.get("l4"):
+                            mapping["l4"] = {}
+                        mapping["l4"][device] = device_obj
+                    elif device_obj.type == "leaf" and device_obj.role == "satellite":
+                        if not mapping.get("l5"):
+                            mapping["l5"] = {}
+                        mapping["l5"][device] = device_obj
 
             # init layer 1 to Y= 50
             devices_y_pos = 50
-            for layer in mapping:
-                devices_x_pos = self.calculate_x_pos(mapping.get(layer))
-                for i, device_obj in enumerate(mapping[layer].values()):
+            for layer in range(1,6):
+                devices_x_pos = self.calculate_x_pos(mapping.get(f"l{layer}"))
+                for i, device_obj in enumerate(mapping[f"l{layer}"].values()):
                     device_obj.set_x_y(devices_x_pos[i], devices_y_pos)
                 devices_y_pos += 250
 
@@ -407,6 +431,7 @@ class zabbixMap:
         return result
 
 def main():
+
     # print("Retrieve and update existing map")
     # Map = zabbixMap("FABRIC")
     # Map.retrieve_map()
@@ -417,24 +442,15 @@ def main():
     # Map.connector.logout()
 
     print("Retrieve a new map from scratch (YAML File)")
-    Map = zabbixMap("titato")
+    Map = zabbixMap("TEST_FABRIC_MAP_AUTOMATION")
     Map.retrieve_map()
     Map.analyse_yaml("map.yaml")
     Map.position_devices()
+    Map.generate_links()
+
     Map.generate_map_json()
     Map.update_map()
 
-
-
-    # Map.update_map()
-
-    # map2 = zabbixMap("mop")
-    # map2.retrieve_map()
-    # for device in deviceList:
-    #    map2.add_device(device)
-    # map2.update_map()
-    print("end")
-    print("end2")
 
     Map.connector.logout()
 
